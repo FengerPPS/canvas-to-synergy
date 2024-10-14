@@ -696,6 +696,7 @@ class SettingsSection extends Section {
             let fileReader = new FileReader()
             fileReader.readAsBinaryString(event.target.files[0])
             fileReader.onload = () => {
+                //https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js
                 let massImport = XLSX.read(fileReader.result, {type: "binary"})
                 let typeSheet = massImport.Sheets["Instructions"]
         
@@ -1085,7 +1086,7 @@ class CourseSection extends Section {
 
                     let currentGradesJSON = this.convertedGrades[this.sections[i].name]
 
-                    let tableXML = `<thead valign = "top">`
+                    /*let tableXML = `<thead valign = "top">`
                     tableXML += "<tr>"
                     for (let columnName in currentGradesJSON[0]) tableXML += "<th>" + columnName + "</th>"
                     tableXML += "</tr></thead><tbody>"
@@ -1101,7 +1102,29 @@ class CourseSection extends Section {
                     tableXML += "</tbody>"
 
                     tableXML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body><table>${tableXML}</table></body></html>`
+                    */
+                   //https://docs.sheetjs.com/docs/demos/extensions/chromium
+                   //https://docs.sheetjs.com/docs/api/write-options/
+                   //https://docs.sheetjs.com/docs/getting-started/examples/export
+                   //https://docs.sheetjs.com/docs/solutions/output/
+                    const worksheet = XLSX.utils.json_to_sheet(currentGradesJSON);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Import Template");
 
+                    
+                    // in the web worker, generate the XLSX file as a Uint8Array
+                    const u8 = XLSX.write(workbook, { type: "array", bookType: "biff8", compression: true});
+                    var blob = new Blob([u8], {type:"application/octet-stream"});
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    a.download = this.sections[i].name + " - " + selectedTerm + ".xls";
+                    
+                    a.href = url;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.setTimeout(() => {URL.revokeObjectURL(url)}, 0)
+                    
+                    /*
                     let gradesBlob = new Blob([tableXML], {type: "application/vnd.ms-excel"}) // create blob out of tableXML
                     // download the file as "canvas section name.xls"
                     let url = URL.createObjectURL(gradesBlob)
@@ -1111,6 +1134,7 @@ class CourseSection extends Section {
                     a.download = this.sections[i].name + " - " + selectedTerm + ".xls"
                     a.click()
                     window.setTimeout(() => {URL.revokeObjectURL(url)}, 0)
+                    */
                 }
                 else {
                     alert("You must upload a Synergy Sample File before downloading (see help page on the left)")
@@ -1404,8 +1428,8 @@ class CourseSection extends Section {
                 let tableXML = `<thead valign = "top" style = "background-color: var(--ic-brand-button--primary-bgd); color: white;">`
                 tableXML += "<tr>"
                 for (let columnName in currentGradesJSON[0]) if (
-                    columnName == "STUDENT_LAST_NAME" || 
                     columnName == "STUDENT_FIRST_NAME" || 
+                    columnName == "STUDENT_LAST_NAME" || 
                     columnName == "ASSIGNMENT_NAME" || 
                     columnName == "OVERALL_SCORE" ||
                     columnName == "MAX_SCORE" ||
@@ -1418,8 +1442,8 @@ class CourseSection extends Section {
                     tableXML += "<tr>"
                     for (let columnName in currentGradesJSON[i]) {
                         if (
-                            columnName == "STUDENT_LAST_NAME" || 
                             columnName == "STUDENT_FIRST_NAME" || 
+                            columnName == "STUDENT_LAST_NAME" || 
                             columnName == "OVERALL_SCORE" ||
                             columnName == "MAX_SCORE" ||
                             columnName == "ASSIGNMENT_TYPE" ||
@@ -1706,19 +1730,25 @@ class CourseSection extends Section {
                         // add object to exportJSON containing grade on current assignment for current student
                         if (submissionFound) exportJSON[currentSection].push({
                             "STUDENT_PERM_ID": currentStudent.sis_user_id,
-                            "STUDENT_LAST_NAME": currentStudent.sortable_name.slice(0, currentStudent.sortable_name.indexOf(", ")),
                             "STUDENT_FIRST_NAME": currentStudent.sortable_name.slice(currentStudent.sortable_name.indexOf(", ") + 2),
-                            "OVERALL_SCORE": (currentScore != null) ? currentScore : "",
+                            "STUDENT_LAST_NAME": currentStudent.sortable_name.slice(0, currentStudent.sortable_name.indexOf(", ")),
                             "ASSIGNMENT_NAME": this.assignments[k].name,
                             "ASSIGNMENT_DESCRIPTION": "Canvas URL: " + this.assignments[k].html_url,
+                            "OVERALL_SCORE": (currentScore != null) ? currentScore : "",
                             "MAX_SCORE": this.assignments[k].points_possible,
                             "POINTS": this.assignments[k].points_possible,
-                            "ASSIGNMENT_DATE": assignmentDate.toLocaleDateString(),
-                            "DUE_DATE": dueDate.toLocaleDateString(),
                             "SCORE_TYPE": "Raw Score",
                             "ASSIGNMENT_TYPE": currentAssignmentType,
+                            "ASSIGNMENT_DATE": assignmentDate.toLocaleDateString(),
+                            "DUE_DATE": dueDate.toLocaleDateString(),
+                            "COMMENTS": "",
+                            "PUBLIC_NOTES": "",
+                            "PRIVATE_NOTES": "",
+                            "PARENT_PORTAL": true,
                             "EXCUSED": currentExcused,
-                            "SHOW_ONLY_WHEN_SCORED": this.sows
+                            "SHOW_ONLY_WHEN_SCORED": this.sows,
+                            "ASSIGNMENT_CATEGORY": "Normal"
+
                         })
                     }
                 }
@@ -1737,19 +1767,24 @@ class CourseSection extends Section {
                         }
                         exportJSON[currentSection].push({
                             "STUDENT_PERM_ID": this.overallStudentGrades[k].sis_user_id,
-                            "STUDENT_LAST_NAME": this.overallStudentGrades[k].sortable_name.slice(0, this.overallStudentGrades[k].sortable_name.indexOf(", ")),
                             "STUDENT_FIRST_NAME": this.overallStudentGrades[k].sortable_name.slice(this.overallStudentGrades[k].sortable_name.indexOf(", ") + 2),
-                            "OVERALL_SCORE": this.overallStudentGrades[k].score,
+                            "STUDENT_LAST_NAME": this.overallStudentGrades[k].sortable_name.slice(0, this.overallStudentGrades[k].sortable_name.indexOf(", ")),
                             "ASSIGNMENT_NAME": "Canvas Overall Grade",
                             "ASSIGNMENT_DESCRIPTION": "Overall student grade from Canvas",
+                            "OVERALL_SCORE": this.overallStudentGrades[k].score,
                             "MAX_SCORE": 100,
                             "POINTS": 100,
-                            "ASSIGNMENT_DATE": currentDate.toLocaleDateString(),
-                            "DUE_DATE": currentDate.toLocaleDateString(),
                             "SCORE_TYPE": "Raw Score",
                             "ASSIGNMENT_TYPE": overallGradeAssignmentType ? overallGradeAssignmentType : types[0],
+                            "ASSIGNMENT_DATE": currentDate.toLocaleDateString(),
+                            "DUE_DATE": currentDate.toLocaleDateString(),
+                            "COMMENTS": "",
+                            "PUBLIC_NOTES": "",
+                            "PRIVATE_NOTES": "",
+                            "PARENT_PORTAL": true,
                             "EXCUSED": false,
-                            "SHOW_ONLY_WHEN_SCORED": false
+                            "SHOW_ONLY_WHEN_SCORED": false,
+                            "ASSIGNMENT_CATEGORY": "Normal"
                         })
                     }
                 }
