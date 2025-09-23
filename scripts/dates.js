@@ -1,20 +1,20 @@
 
 // enter ("Month day, year") for dates
 //Dates are here:
-//https://support.pps.net/support/solutions/articles/8000045931
+//https://portlandps.incidentiq.com/ Knowledge Base  2025-2026 Grading Reporting Timeline
 
 var startDates = [
-    new Date("August 27, 2024"), // quarter 1
-    new Date("November 5, 2024"), // quarter 2
-    new Date("January 29, 2025"), // quarter 3
-    new Date("April 8, 2025"), // quarter 4
+    new Date("August 26, 2025"), // quarter 1
+    new Date("November 3, 2025"), // quarter 2
+    new Date("January 28, 2026"), // quarter 3
+    new Date("April 7, 2026"), // quarter 4
 ]
 
 var endDates = [
-    new Date("October 31, 2024"), // quarter 1
-    new Date("January 24, 2025"), // quarter 2
-    new Date("April 3, 2025"), // quarter 3
-    new Date("June 10, 2025"), // quarter 4
+    new Date("October 29, 2025"), // quarter 1
+    new Date("January 23, 2026"), // quarter 2
+    new Date("April 2, 2026"), // quarter 3
+    new Date("June 9, 2026"), // quarter 4
 ]
 
 var currentSchoolYear = endDates[3].getFullYear() // year that appears in sis_course_id for each course
