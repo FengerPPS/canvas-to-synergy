@@ -3,8 +3,8 @@
 //Dates are here:
 //https://portlandps.incidentiq.com/ Knowledge Base  [Year] Grading Reporting Timeline
 
-YEAR1: "2026"
-YEAR2: "2027"
+const YEAR1 = "2026"
+const YEAR2 = "2027"
 
 var startDates = [
     new Date("August 26, " + YEAR1), // quarter 1
